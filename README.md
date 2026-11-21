@@ -48,6 +48,14 @@ From the spreadsheet: for each avocado and stage, the number of days from when i
 stage until it first reached stage 3 (ripe) and stage 5 (overripe). Median and inter-quartile range per
 storage group: ambient (`Tam`) and 10 °C (`T10`).
 
+## Privacy
+
+Everything runs in the browser. The photo is never uploaded or stored: the page has no backend, no cookies,
+no analytics and no storage of scans. The only network traffic is downloading the page (GitHub Pages),
+Transformers.js and ONNX Runtime (jsDelivr) and the DINOv2 model (Hugging Face), all GET requests.
+The camera stream is stopped after capture, on cancel and when the page is hidden.
+`training/privacy-test.mjs` lists every request during a scan and checks that scanning works offline.
+
 ## Data
 
 Xavier, P., Rodrigues, P. & Silva, C. L. M. (2024). *'Hass' Avocado Ripening Photographic Dataset*.
