@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Avocado Scanner</title>
+<meta name="description" content="Point your phone at a Hass avocado and see how ripe it is and how many days it has left.">
+<meta name="theme-color" content="#2f4a1f">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥑</text></svg>">
+<style>
+  :root {
+    --bg: #f6f3ea; --card: #fffdf7; --ink: #1f2a17; --muted: #5d6652; --line: #e3decf;
+    --brand: #2f4a1f; --brand-ink: #fffdf7; --accent: #8fb339;
+    --s1: #8fb339; --s2: #8a8a3a; --s3: #7a4a5a; --s4: #4a2c3e; --s5: #2b231f;
+    --radius: 18px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #12160f; --card: #1b2117; --ink: #eef0e6; --muted: #a3ab96; --line: #2c3426;
+      --brand: #a6c95a; --brand-ink: #12160f; --s5: #6b5a50; --s4: #7a5068; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  main { max-width: 520px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 28px; line-height: 1.15; margin: 8px 0 6px; letter-spacing: -0.02em; }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 28px 0 10px; }
+  p { margin: 0 0 10px; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+  button { font: inherit; cursor: pointer; border: 0; }
+  .primary { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 64px;
+    background: var(--brand); color: var(--brand-ink); border-radius: 999px; font-size: 20px; font-weight: 650;
+    box-shadow: 0 6px 20px rgb(47 74 31 / .25); }
+  .primary:active { transform: scale(.98); }
+  .link { background: none; color: var(--brand); text-decoration: underline; padding: 10px; display: block; margin: 6px auto 0; }
+
+  /* home */
+  .hero { text-align: center; padding: 24px 0 8px; }
+  .hero .avo { font-size: 84px; line-height: 1; filter: drop-shadow(0 8px 12px rgb(0 0 0 / .15)); }
+  .lede { color: var(--muted); max-width: 34ch; margin: 0 auto 24px; }
+  .tips { list-style: none; padding: 16px; margin: 0; display: grid; gap: 10px; }
+  .tips li { display: flex; gap: 12px; align-items: flex-start; }
+  .tips b { flex: 0 0 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #1f2a17;
+    display: grid; place-items: center; font-size: 14px; }
+  .stages { display: grid; gap: 8px; }
+  .stages div { display: flex; gap: 10px; align-items: center; }
+  .dot { flex: 0 0 18px; height: 18px; border-radius: 50%; }
+  .d1 { background: var(--s1); } .d2 { background: var(--s2); } .d3 { background: var(--s3); } .d4 { background: var(--s4); } .d5 { background: var(--s5); }
+
+  /* camera */
+  #camera { position: fixed; inset: 0; background: #000; color: #fff; display: flex; flex-direction: column; z-index: 10; }
+  #camera[hidden] { display: none; }
+  .viewport { position: relative; width: min(100vw, calc(100vh - 190px)); aspect-ratio: 1; margin: auto; overflow: hidden; }
+  .viewport video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .viewport svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .cam-hint { text-align: center; padding: 14px 16px 0; font-size: 15px; }
+  .cam-bar { display: flex; align-items: center; justify-content: space-around; padding: 18px 16px calc(22px + env(safe-area-inset-bottom)); }
+  .cam-bar button { background: none; color: #fff; font-size: 15px; min-width: 80px; padding: 10px; }
+  #shutter { width: 76px; height: 76px; min-width: 0; border-radius: 50%; background: #fff; border: 5px solid rgb(255 255 255 / .4);
+    background-clip: padding-box; }
+  #shutter:active { transform: scale(.94); }
+
+  /* result */
+  .shot-wrap { border-radius: var(--radius); overflow: hidden; background: #000; }
+  #shot { display: block; width: 100%; height: auto; }
+  .verdict { margin-top: 16px; }
+  .stage-head { display: flex; gap: 14px; align-items: center; }
+  .badge { flex: 0 0 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; font-size: 28px; font-weight: 750; color: #fff; }
+  [data-stage="1"] .badge { background: var(--s1); color: #1f2a17; } [data-stage="2"] .badge { background: var(--s2); }
+  [data-stage="3"] .badge { background: var(--s3); } [data-stage="4"] .badge { background: var(--s4); } [data-stage="5"] .badge { background: var(--s5); }
+  .stage-head h1 { margin: 0; font-size: 26px; }
+  #confidence { font-size: 14px; color: var(--muted); }
+  #stage-advice { font-size: 18px; margin: 14px 0 4px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat .k { font-size: 13px; color: var(--muted); }
+  .stat .v { font-size: 24px; font-weight: 700; line-height: 1.2; margin: 2px 0; }
+  .stat .r { font-size: 13px; color: var(--muted); }
+  .seg { display: flex; background: var(--line); border-radius: 999px; padding: 4px; margin-bottom: 10px; }
+  .seg label { flex: 1; text-align: center; padding: 8px 6px; border-radius: 999px; font-size: 14px; cursor: pointer; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg label:has(input:checked) { background: var(--card); font-weight: 650; box-shadow: 0 1px 3px rgb(0 0 0 / .12); }
+  .bar { display: grid; grid-template-columns: 120px 1fr 40px; gap: 8px; align-items: center; font-size: 14px; padding: 3px 0; }
+  .bar.top { font-weight: 700; }
+  .track { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .fill { display: block; height: 100%; border-radius: 99px; }
+  .fill.s1 { background: var(--s1); } .fill.s2 { background: var(--s2); } .fill.s3 { background: var(--s3); } .fill.s4 { background: var(--s4); } .fill.s5 { background: var(--s5); }
+  .val { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .note { background: color-mix(in srgb, var(--accent) 18%, var(--card)); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); font-size: 14px; }
+  footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
+  footer a { color: inherit; }
+  details summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+</style>
+</head>
+<body>
+
+<main id="home">
+  <section class="hero">
+    <div class="avo" aria-hidden="true">🥑</div>
+    <h1>How ripe is my avocado?</h1>
+    <p class="lede">Take a photo of a Hass avocado to see its ripening stage and how many days it has left.</p>
+    <button class="primary" id="scan" type="button">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V6a2 2 0 0 1 2-2h2M17 4h2a2 2 0 0 1 2 2v2M21 16v2a2 2 0 0 1-2 2h-2M7 20H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>
+      Scan avocado
+    </button>
+    <button class="link" id="upload" type="button">or choose a photo</button>
+    <button class="link small" id="sample" type="button" style="margin-top:0">No avocado handy? Try a sample photo</button>
+  </section>
+
+  <h2>For the best result</h2>
+  <ul class="tips card">
+    <li><b>1</b><span>Put the avocado on <strong>white paper</strong> or a white plate.</span></li>
+    <li><b>2</b><span>Use <strong>daylight</strong> or bright, even light. Avoid strong shadows.</span></li>
+    <li><b>3</b><span>Hold it upright so it <strong>fills the oval</strong>.</span></li>
+  </ul>
+
+  <h2>The five stages</h2>
+  <div class="stages card">
+    <div><span class="dot d1"></span><span><strong>1 Underripe</strong> <span class="muted">· green, very firm</span></span></div>
+    <div><span class="dot d2"></span><span><strong>2 Breaking</strong> <span class="muted">· olive-brown, slight give</span></span></div>
+    <div><span class="dot d3"></span><span><strong>3 Ripe, early</strong> <span class="muted">· purple spots, slices well</span></span></div>
+    <div><span class="dot d4"></span><span><strong>4 Ripe, late</strong> <span class="muted">· uniformly purple, soft</span></span></div>
+    <div><span class="dot d5"></span><span><strong>5 Overripe</strong> <span class="muted">· past its prime</span></span></div>
+  </div>
+
+  <footer>
+    <details>
+      <summary>How it works</summary>
+      <p>The scanner measures the colour and texture of the avocado's skin inside the oval and compares them with
+        14,710 lab photos of 478 Hass avocados that were photographed every day as they ripened.
+        On avocados it has never seen, it gets the exact stage right <span id="accuracy">–</span> of the time and is within one stage
+        <span id="accuracy1">–</span> of the time. Phone photos in kitchen lighting are harder than lab photos, so treat the result as a guide.</p>
+      <p>The "days left" come from how long the avocados in the study took to go from each stage to ripe (stage 3) and to overripe (stage 5),
+        either at room temperature or at 10&nbsp;°C. A household fridge (around 4&nbsp;°C) is likely to slow ripening even more.</p>
+      <p>Your photo is analysed on your phone and never uploaded.</p>
+    </details>
+    <p style="margin-top:14px">Data: Xavier, P., Rodrigues, P. &amp; Silva, C. L. M. (2024). <em>'Hass' Avocado Ripening Photographic Dataset</em>.
+      Mendeley Data, V1. <a href="https://doi.org/10.17632/3xd9n945v8.1">doi:10.17632/3xd9n945v8.1</a>. Licensed CC BY 4.0.</p>
+  </footer>
+</main>
+
+<section id="camera" hidden>
+  <p class="cam-hint">Fit the avocado inside the oval</p>
+  <div class="viewport">
+    <video id="video" playsinline muted autoplay></video>
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      <defs><mask id="hole"><rect width="100" height="100" fill="#fff"/><ellipse cx="50" cy="50" rx="30" ry="42" fill="#000"/></mask></defs>
+      <rect width="100" height="100" fill="rgba(0,0,0,.45)" mask="url(#hole)"/>
+      <ellipse cx="50" cy="50" rx="30" ry="42" fill="none" stroke="#fff" stroke-width=".7" stroke-dasharray="3 2.2"/>
+    </svg>
+  </div>
+  <div class="cam-bar">
+    <button id="cancel" type="button">Cancel</button>
+    <button id="shutter" type="button" aria-label="Take photo"></button>
+    <button id="upload2" type="button">Photo</button>
+  </div>
+</section>
+
+<main id="result" hidden>
+  <div class="shot-wrap"><canvas id="shot" width="480" height="480" aria-label="Your photo. The parts the scanner ignored are darkened."></canvas></div>
+
+  <div id="error" class="card note verdict" hidden>
+    <p><strong>Couldn't find the avocado.</strong></p>
+    <p>Make sure it fills the oval and sits on a light background, then try again.</p>
+  </div>
+
+  <div id="verdict" class="verdict">
+    <div class="stage-head">
+      <div class="badge" id="stage-num">–</div>
+      <div>
+        <h1 id="stage-name">–</h1>
+        <div id="confidence"></div>
+      </div>
+    </div>
+    <p id="stage-advice"></p>
+    <p class="muted small" id="stage-detail"></p>
+
+    <h2>Days left</h2>
+    <div class="seg" role="radiogroup" aria-label="Where is it stored?">
+      <label><input type="radio" name="storage" value="Tam" checked>On the counter</label>
+      <label><input type="radio" name="storage" value="T10">Cool, 10&nbsp;°C</label>
+    </div>
+    <div class="grid2">
+      <div class="card stat"><div class="k">Until ripe</div><div class="v" id="to-ripe">–</div><div class="r" id="to-ripe-range"></div></div>
+      <div class="card stat"><div class="k">Until overripe</div><div class="v" id="to-over">–</div><div class="r" id="to-over-range"></div></div>
+    </div>
+
+    <h2>Stage likelihood</h2>
+    <div class="card" id="bars"></div>
+    <p class="card note" id="wb-note" style="margin-top:12px" hidden>Tip: put the avocado on white paper so the scanner can correct for the colour of your lighting.</p>
+  </div>
+
+  <button class="primary" id="again" type="button" style="margin-top:24px">Scan another</button>
+  <button class="link" type="button" onclick="location.reload()">Back to start</button>
+</main>
+
+<input type="file" id="file" accept="image/*" hidden>
+<script type="module" src="app.js"></script>
+</body>
+</html>

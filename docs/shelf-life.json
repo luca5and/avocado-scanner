@@ -1,0 +1,173 @@
+{
+ "source": "Xavier, Rodrigues & Silva (2024), 'Hass' Avocado Ripening Photographic Dataset, Mendeley Data, doi:10.17632/3xd9n945v8.1, CC BY 4.0",
+ "groups": {
+  "T10": {
+   "samples": 192,
+   "stages": {
+    "1": {
+     "samplesSeen": 192,
+     "toRipe": {
+      "n": 175,
+      "median": 10,
+      "p25": 9,
+      "p75": 10
+     },
+     "toOverripe": {
+      "n": 155,
+      "median": 21,
+      "p25": 20,
+      "p75": 22
+     }
+    },
+    "2": {
+     "samplesSeen": 179,
+     "toRipe": {
+      "n": 175,
+      "median": 3,
+      "p25": 2,
+      "p75": 4
+     },
+     "toOverripe": {
+      "n": 155,
+      "median": 14,
+      "p25": 12,
+      "p75": 15
+     }
+    },
+    "3": {
+     "samplesSeen": 175,
+     "toOverripe": {
+      "n": 155,
+      "median": 11,
+      "p25": 9,
+      "p75": 13
+     }
+    },
+    "4": {
+     "samplesSeen": 166,
+     "toOverripe": {
+      "n": 155,
+      "median": 5,
+      "p25": 4,
+      "p75": 7
+     }
+    },
+    "5": {
+     "samplesSeen": 155
+    }
+   }
+  },
+  "T20": {
+   "samples": 143,
+   "stages": {
+    "1": {
+     "samplesSeen": 143,
+     "toRipe": {
+      "n": 135,
+      "median": 4,
+      "p25": 3,
+      "p75": 4
+     },
+     "toOverripe": {
+      "n": 127,
+      "median": 9,
+      "p25": 9,
+      "p75": 9
+     }
+    },
+    "2": {
+     "samplesSeen": 138,
+     "toRipe": {
+      "n": 135,
+      "median": 2,
+      "p25": 2,
+      "p75": 2
+     },
+     "toOverripe": {
+      "n": 127,
+      "median": 7,
+      "p25": 7,
+      "p75": 8
+     }
+    },
+    "3": {
+     "samplesSeen": 127,
+     "toOverripe": {
+      "n": 119,
+      "median": 5,
+      "p25": 5,
+      "p75": 6
+     }
+    },
+    "4": {
+     "samplesSeen": 130,
+     "toOverripe": {
+      "n": 127,
+      "median": 3,
+      "p25": 2,
+      "p75": 4
+     }
+    },
+    "5": {
+     "samplesSeen": 127
+    }
+   }
+  },
+  "Tam": {
+   "samples": 143,
+   "stages": {
+    "1": {
+     "samplesSeen": 143,
+     "toRipe": {
+      "n": 136,
+      "median": 4,
+      "p25": 3,
+      "p75": 5
+     },
+     "toOverripe": {
+      "n": 128,
+      "median": 8,
+      "p25": 8,
+      "p75": 9
+     }
+    },
+    "2": {
+     "samplesSeen": 138,
+     "toRipe": {
+      "n": 136,
+      "median": 2,
+      "p25": 2,
+      "p75": 2
+     },
+     "toOverripe": {
+      "n": 128,
+      "median": 6,
+      "p25": 6,
+      "p75": 7
+     }
+    },
+    "3": {
+     "samplesSeen": 129,
+     "toOverripe": {
+      "n": 121,
+      "median": 4,
+      "p25": 4,
+      "p75": 5
+     }
+    },
+    "4": {
+     "samplesSeen": 130,
+     "toOverripe": {
+      "n": 128,
+      "median": 2,
+      "p25": 2,
+      "p75": 3
+     }
+    },
+    "5": {
+     "samplesSeen": 128
+    }
+   }
+  }
+ }
+}
