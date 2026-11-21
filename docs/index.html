@@ -92,6 +92,16 @@
   footer { margin-top: 32px; font-size: 13px; color: var(--muted); }
   footer a { color: inherit; }
   details summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+
+  /* privacy */
+  .lock { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink); margin: 14px auto 0;
+    padding: 8px 14px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 16%, var(--card)); border: 1px solid var(--line); }
+  .lock svg, .privacy svg { flex: 0 0 auto; }
+  .privacy { list-style: none; padding: 16px; margin: 0; display: grid; gap: 12px; }
+  .privacy li { display: flex; gap: 12px; align-items: flex-start; }
+  .privacy li > span:first-child { flex: 0 0 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+    background: color-mix(in srgb, var(--accent) 22%, var(--card)); font-size: 15px; }
+  .shot-note { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; color: var(--muted); margin: 8px 0 0; }
 </style>
 </head>
 <body>
@@ -110,6 +120,10 @@
     <button class="link small" id="sample" type="button" style="margin-top:0">No avocado handy? Try a sample photo</button>
     <p class="muted small" id="first-download" hidden>The first scan downloads the image model (about 30&nbsp;MB) – Wi-Fi recommended. After that it's saved on your phone.</p>
     <p class="muted small net-status" aria-live="polite" hidden></p>
+    <a class="lock" href="#privacy" style="text-decoration:none">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <span>Your photo never leaves your phone</span>
+    </a>
   </section>
 
   <h2>For the best result</h2>
@@ -128,6 +142,20 @@
     <div><span class="dot d5"></span><span><strong>5 Overripe</strong> <span class="muted">· past its prime</span></span></div>
   </div>
 
+  <h2 id="privacy">Your privacy</h2>
+  <ul class="privacy card">
+    <li><span aria-hidden="true">📱</span><span><strong>Your photo stays on your phone.</strong> The scanner runs inside your browser, on your phone.
+      Your photo is never uploaded, sent or saved anywhere. When you leave the page, it's gone.</span></li>
+    <li><span aria-hidden="true">📷</span><span><strong>The camera is only on while you're aiming.</strong> It switches off as soon as you take the photo,
+      cancel, or leave the page.</span></li>
+    <li><span aria-hidden="true">🚫</span><span><strong>No account, no cookies, no tracking.</strong> There are no ads or analytics, and nothing about your scans is recorded.</span></li>
+    <li><span aria-hidden="true">⬇️</span><span><strong>Downloads only.</strong> The page only <em>downloads</em> files: the page itself (from GitHub Pages),
+      the scanning software (jsDelivr) and the image model (Hugging Face). Like any website, those servers see your IP address
+      when they send the files, but they never receive your photo or results.</span></li>
+    <li><span aria-hidden="true">✈️</span><span><strong>Check it yourself.</strong> After your first scan, switch on airplane mode and scan again.
+      It still works, because nothing needs to be sent anywhere.</span></li>
+  </ul>
+
   <footer>
     <details>
       <summary>How it works</summary>
@@ -140,7 +168,7 @@
         so treat the result as a guide.</p>
       <p>The "days left" come from how long the avocados in the study took to go from each stage to ripe (stage 3) and to overripe (stage 5),
         either at room temperature or at 10&nbsp;°C. A household fridge (around 4&nbsp;°C) is likely to slow ripening even more.</p>
-      <p>Your photo is analysed on your phone and never uploaded. The image network (about 30&nbsp;MB) is downloaded the first time you scan and then saved on your phone.</p>
+      <p>The image network (about 30&nbsp;MB) is downloaded the first time you scan and then saved on your phone, so your photo can be analysed right there (see <a href="#privacy">Your privacy</a>).</p>
     </details>
     <p style="margin-top:14px">Data: Xavier, P., Rodrigues, P. &amp; Silva, C. L. M. (2024). <em>'Hass' Avocado Ripening Photographic Dataset</em>.
       Mendeley Data, V1. <a href="https://doi.org/10.17632/3xd9n945v8.1">doi:10.17632/3xd9n945v8.1</a>. Licensed CC BY 4.0.</p>
@@ -149,6 +177,7 @@
 
 <section id="camera" hidden>
   <p class="cam-hint">Fit the avocado inside the oval, on white paper</p>
+  <p class="cam-hint" style="font-size:13px;opacity:.75;padding-top:4px">🔒 The photo stays on your phone</p>
   <p class="cam-hint net-status" style="font-size:13px;opacity:.8;padding-top:4px" hidden></p>
   <div class="viewport">
     <video id="video" playsinline muted autoplay></video>
@@ -167,6 +196,8 @@
 
 <main id="result" hidden>
   <div class="shot-wrap"><canvas id="shot" width="480" height="480" aria-label="Your photo. The parts the scanner ignored are darkened."></canvas></div>
+  <p class="shot-note"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    Analysed on your phone – not uploaded or saved</p>
 
   <div id="error" class="card note verdict" hidden>
     <p><strong>Couldn't find the avocado.</strong></p>

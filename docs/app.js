@@ -257,6 +257,8 @@ $('scan').addEventListener('click', openCamera);
 $('again').addEventListener('click', openCamera);
 $('shutter').addEventListener('click', capture);
 $('cancel').addEventListener('click', () => { closeCamera(); show('home'); });
+// Never leave the camera running in the background: switch it off when the page is hidden.
+document.addEventListener('visibilitychange', () => { if (document.hidden && stream) { closeCamera(); show('home'); } });
 $('upload').addEventListener('click', () => $('file').click());
 $('upload2').addEventListener('click', () => { closeCamera(); $('file').click(); });
 for (const id of ['file', 'file-gallery']) $(id).addEventListener('change', e => { fromFile(e.target.files[0]); e.target.value = ''; });
