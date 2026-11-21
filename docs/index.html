@@ -105,7 +105,8 @@
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V6a2 2 0 0 1 2-2h2M17 4h2a2 2 0 0 1 2 2v2M21 16v2a2 2 0 0 1-2 2h-2M7 20H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.5"/></svg>
       Scan avocado
     </button>
-    <button class="link" id="upload" type="button">or choose a photo</button>
+    <button class="link" id="upload" type="button">or take a photo with the camera app</button>
+    <button class="link small" id="gallery" type="button" style="margin-top:0">pick a photo from your gallery</button>
     <button class="link small" id="sample" type="button" style="margin-top:0">No avocado handy? Try a sample photo</button>
   </section>
 
@@ -154,7 +155,7 @@
   <div class="cam-bar">
     <button id="cancel" type="button">Cancel</button>
     <button id="shutter" type="button" aria-label="Take photo"></button>
-    <button id="upload2" type="button">Photo</button>
+    <button id="upload2" type="button">Camera app</button>
   </div>
 </section>
 
@@ -196,7 +197,8 @@
   <button class="link" type="button" onclick="location.reload()">Back to start</button>
 </main>
 
-<input type="file" id="file" accept="image/*" hidden>
+<input type="file" id="file" accept="image/*" capture="environment" hidden>
+<input type="file" id="file-gallery" accept="image/*" hidden>
 <script type="module" src="app.js"></script>
 </body>
 </html>
