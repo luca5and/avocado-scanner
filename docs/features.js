@@ -42,10 +42,9 @@ export const FEATURE_NAMES = [];
  * @param {Uint8Array|null} region  SIZE*SIZE, 1 where fruit may be (null = whole image)
  * @returns {{features:number[], fruitPixels:number, balanced:boolean, mask:Uint8Array}|null}
  */
-export function extractFeatures(rgba, region = null) {
-  const n = SIZE * SIZE;
-  // 1) split light background (paper / lightbox) from the darker fruit with Otsu's threshold
-  //    on perceptual lightness. Works under any tint or exposure, unlike a fixed "white" test.
+// Perceptual lightness per pixel + Otsu threshold splitting light background from darker fruit.
+// Works under any tint or exposure, unlike a fixed "white" test.
+function otsuLightness(rgba, n) {
   const Y = new Float32Array(n);
   const BINS = 64, hist = new Float64Array(BINS);
   for (let i = 0; i < n; i++) {
@@ -60,7 +59,69 @@ export function extractFeatures(rgba, region = null) {
     const v = w0 * w1 * (s0 / w0 - (sumAll - s0) / w1) ** 2;
     if (v > bestVar) { bestVar = v; tBin = k; }
   }
-  const thr = (tBin + 1) / BINS;
+  return { Y, thr: (tBin + 1) / BINS };
+}
+
+/**
+ * Find the avocado in a whole photo taken on a light background.
+ * Returns a square crop {x, y, side} (in the given w x h pixel grid) framed like the dataset photos,
+ * where the fruit is ~70% of the frame height, or null if there is no clear light background.
+ */
+export function locateFruit(rgba, w, h) {
+  const n = w * h, { Y, thr } = otsuLightness(rgba, n);
+  let nB = 0, yB = 0, nD = 0, yD = 0;
+  const xs = [], ys = [];
+  for (let i = 0; i < n; i++) {
+    if (Y[i] >= thr) { nB++; yB += Y[i]; } else { nD++; yD += Y[i]; xs.push(i % w); ys.push((i / w) | 0); }
+  }
+  if (nB < n * 0.25 || nD < n * 0.02 || yB / nB < 1.5 * (yD / nD)) return null;
+  const q = (a, p) => { const s = Int32Array.from(a).sort(); return s[Math.floor(p * (s.length - 1))]; };
+  const x0 = q(xs, 0.02), x1 = q(xs, 0.98), y0 = q(ys, 0.02), y1 = q(ys, 0.98);
+  const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+  // the fruit must be a compact blob, not dark stuff spread over the whole picture
+  if (bw > 0.95 * w && bh > 0.95 * h) return null;
+  if (nD / (bw * bh) < 0.35) return null;
+  let side = Math.max(bh, bw) / 0.51; // dataset: fruit spans ~51% of the frame (median)
+  side = Math.min(side, w, h);
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  const x = Math.max(0, Math.min(w - side, cx - side / 2)), y = Math.max(0, Math.min(h - side, cy - side / 2));
+  return { x, y, side };
+}
+
+/**
+ * Colour-cast correction for the image network: per-channel gains (linear light) that give the light
+ * background the same slightly bluish tint as the dataset's lightbox, without changing its brightness.
+ * null when no clear light background.
+ */
+const LIGHTBOX_TINT = [0.9518, 0.9785, 1.0695]; // median background colour of the dataset photos, relative to grey
+export function backgroundGains(rgba, n) {
+  const { Y, thr } = otsuLightness(rgba, n);
+  let r = 0, g = 0, b = 0, c = 0, nD = 0;
+  for (let i = 0; i < n; i++) {
+    if (Y[i] < thr) { nD++; continue; }
+    const R = rgba[4 * i], G = rgba[4 * i + 1], B = rgba[4 * i + 2];
+    if (Math.max(R, G, B) >= 250) continue;
+    r += LIN[R]; g += LIN[G]; b += LIN[B]; c++;
+  }
+  if (c < n * 0.15 || nD < n * 0.02) return null;
+  const grey = (r + g + b) / 3;
+  return [grey * LIGHTBOX_TINT[0] / r, grey * LIGHTBOX_TINT[1] / g, grey * LIGHTBOX_TINT[2] / b];
+}
+
+/** Apply linear-light gains to RGBA pixels in place. */
+export function applyGains(rgba, gains) {
+  const toS = v => 255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
+  const luts = gains.map(k => Uint8ClampedArray.from(LIN, v => toS(Math.min(1, v * k))));
+  for (let i = 0; i < rgba.length; i += 4) {
+    rgba[i] = luts[0][rgba[i]]; rgba[i + 1] = luts[1][rgba[i + 1]]; rgba[i + 2] = luts[2][rgba[i + 2]];
+  }
+  return rgba;
+}
+
+export function extractFeatures(rgba, region = null) {
+  const n = SIZE * SIZE;
+  // 1) split light background (paper / lightbox) from the darker fruit
+  const { Y, thr } = otsuLightness(rgba, n);
   let nBright = 0, outside = 0, yBright = 0, yDark = 0, nDark = 0;
   for (let i = 0; i < n; i++) {
     if (Y[i] >= thr) { nBright++; yBright += Y[i]; if (region && !region[i]) outside++; }

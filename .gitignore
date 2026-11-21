@@ -1,2 +1,3 @@
 node_modules/
 training/data/features.json
+training/data/emb-*

@@ -9,25 +9,38 @@ Everything runs in the browser; photos are never uploaded.
 
 ## How it works
 
-1. The camera view shows an oval guide. The photo is cropped to a square and shrunk to 128×128.
-2. [`docs/features.js`](docs/features.js) separates the light background from the fruit (Otsu threshold),
-   uses the background to correct white balance and exposure, and measures 31 colour/texture features
-   of the skin inside the oval (CIELab statistics, hue histogram, dark/purple/green fractions, texture).
-3. [`docs/model.js`](docs/model.js) runs a softmax classifier ([`docs/model.json`](docs/model.json), 2 KB)
-   and turns the stage probabilities into "days left" using [`docs/shelf-life.json`](docs/shelf-life.json).
+1. **Find the avocado.** [`docs/features.js`](docs/features.js) separates the light background (white paper)
+   from the fruit with an Otsu threshold and crops a square around the fruit, framed like the dataset photos
+   (fruit ≈ 51% of the frame). Without a clear light background it falls back to the centre square + oval guide.
+2. **Image network.** A pretrained [DINOv2-small](https://huggingface.co/onnx-community/dinov2-small) (8-bit, ~25 MB,
+   run in the browser with [Transformers.js](https://github.com/huggingface/transformers.js)) turns the crop into
+   768 numbers (CLS token + mean of patch tokens). Before that, the image is colour-corrected so the paper has the
+   same tint as the dataset's lightbox.
+3. **Colour features.** 31 skin measurements (CIELab statistics, hue histogram, dark/purple/green fractions, texture),
+   white-balanced against the paper.
+4. **Classifier.** A softmax classifier on both ([`docs/head.json`](docs/head.json), 47 KB) gives the stage
+   probabilities, and [`docs/shelf-life.json`](docs/shelf-life.json) turns them into "days left".
+   If the network can't load, the older colour-only model ([`docs/model.json`](docs/model.json)) is used.
 
 ### Accuracy
 
 5-fold cross-validation, split **by avocado** (no fruit appears in both train and test):
 
-| | |
-|---|---|
-| Exact stage | 67% |
-| Within ±1 stage | 98% |
+| Model | Exact stage | Within ±1 | Overripe (stage 5) found |
+|---|---|---|---|
+| Colour features only (v1) | 67% | 98% | 56% |
+| MobileNetV4-small logits | 53% | 92% | 48% |
+| DINOv2-small | 72% | 99% | 74% |
+| **DINOv2-small + colour (live)** | **73%** | **99%** | **71%** |
 
-Most errors are between stage 4 (ripe, soft) and 5 (overripe), which often look alike from the outside.
-These numbers are for lab photos; phone photos in kitchen light will do somewhat worse. Simulated warm/dim
-lighting costs only 1–2 points thanks to the white-paper correction; cool light costs ~6.
+Missed overripe avocados are almost always called stage 4 (ripe, soft): overripeness (mould, flesh separating from
+the skin) often doesn't show on the outside, so the site suggests a stem-cap / press check when it is torn between 4 and 5.
+
+Robustness of the full app pipeline (`training/test-app2.mjs`, ~1,000 photos; model trained on all photos, so compare rows,
+not absolute numbers): full frame 75%; auto-crop + colour correction 74%; same under simulated warm light 74%;
+cool light 67% (the simulation clips the white background, which defeats the correction).
+
+These are lab photos. Phone photos in kitchen light will do worse; how much is not yet measured.
 
 ### Days left
 
@@ -51,7 +64,12 @@ npm install
 node stats.mjs                              # -> docs/shelf-life.json
 node extract.mjs "<path to 'Avocado Ripening Dataset' image folder>"   # -> data/features.json
 node train.mjs cv                           # cross-validation report
-node train.mjs 0                            # -> docs/model.json (0 = no hidden layer)
+node train.mjs 0                            # -> docs/model.json (colour-only fallback)
+node embed.mjs onnx-community/dinov2-small q8 "<image folder>"   # ~20 min -> data/emb-dinov2-small-q8.*
+node train-emb.mjs cv dinov2-small-q8+color # cross-validation
+node train-emb.mjs save dinov2-small-q8+color 0.01   # -> docs/head.json
+node test-app2.mjs "<image folder>"         # app pipeline: auto-crop, colour correction, lighting
+node browser-test.mjs                       # runs the samples in real Chrome (needs serve.mjs running)
 cd .. && node training/test-app.mjs "<image folder>"   # app pipeline under simulated lighting
 node training/serve.mjs                     # local preview at http://localhost:8123
 ```
@@ -60,4 +78,5 @@ node training/serve.mjs                     # local preview at http://localhost:
 
 - Collect real phone photos (with known stage) to measure and fine-tune for kitchen conditions.
 - Scan both sides of the fruit (as in the dataset) and average.
-- A small CNN (e.g. MobileNet via ONNX/TF.js) may separate stages 4 and 5 better.
+- Fine-tune the network itself (needs a GPU / Python) rather than only training a classifier on its output.
+- Train with colour/crop augmentation so phone photos look less unfamiliar.

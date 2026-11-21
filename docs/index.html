@@ -108,13 +108,14 @@
     <button class="link" id="upload" type="button">or take a photo with the camera app</button>
     <button class="link small" id="gallery" type="button" style="margin-top:0">pick a photo from your gallery</button>
     <button class="link small" id="sample" type="button" style="margin-top:0">No avocado handy? Try a sample photo</button>
+    <p class="muted small" id="net-status" aria-live="polite"></p>
   </section>
 
   <h2>For the best result</h2>
   <ul class="tips card">
     <li><b>1</b><span>Put the avocado on <strong>white paper</strong> or a white plate.</span></li>
     <li><b>2</b><span>Use <strong>daylight</strong> or bright, even light. Avoid strong shadows.</span></li>
-    <li><b>3</b><span>Hold it upright so it <strong>fills the oval</strong>.</span></li>
+    <li><b>3</b><span>Keep the <strong>whole avocado in view</strong>, upright, in the middle of the picture.</span></li>
   </ul>
 
   <h2>The five stages</h2>
@@ -129,13 +130,16 @@
   <footer>
     <details>
       <summary>How it works</summary>
-      <p>The scanner measures the colour and texture of the avocado's skin inside the oval and compares them with
-        14,710 lab photos of 478 Hass avocados that were photographed every day as they ripened.
-        On avocados it has never seen, it gets the exact stage right <span id="accuracy">–</span> of the time and is within one stage
-        <span id="accuracy1">–</span> of the time. Phone photos in kitchen lighting are harder than lab photos, so treat the result as a guide.</p>
+      <p>The scanner finds the avocado in your photo and looks at it in two ways: a pretrained image network (DINOv2) that picks up
+        shape, wrinkles and spots, and measurements of the skin's colour. A classifier trained on
+        14,710 lab photos of 478 Hass avocados, photographed every day as they ripened, combines the two.</p>
+      <p>On avocados it has never seen, it gets the exact stage right <span id="accuracy">–</span> of the time and is within one stage
+        <span id="accuracy1">–</span> of the time. It spots <span id="accuracy5">–</span> of overripe avocados; the rest it usually calls
+        "ripe, late", because overripeness often doesn't show on the skin. Phone photos in kitchen lighting are harder than lab photos,
+        so treat the result as a guide.</p>
       <p>The "days left" come from how long the avocados in the study took to go from each stage to ripe (stage 3) and to overripe (stage 5),
         either at room temperature or at 10&nbsp;°C. A household fridge (around 4&nbsp;°C) is likely to slow ripening even more.</p>
-      <p>Your photo is analysed on your phone and never uploaded.</p>
+      <p>Your photo is analysed on your phone and never uploaded. The image network (about 25&nbsp;MB) is downloaded once and then cached.</p>
     </details>
     <p style="margin-top:14px">Data: Xavier, P., Rodrigues, P. &amp; Silva, C. L. M. (2024). <em>'Hass' Avocado Ripening Photographic Dataset</em>.
       Mendeley Data, V1. <a href="https://doi.org/10.17632/3xd9n945v8.1">doi:10.17632/3xd9n945v8.1</a>. Licensed CC BY 4.0.</p>
@@ -143,13 +147,13 @@
 </main>
 
 <section id="camera" hidden>
-  <p class="cam-hint">Fit the avocado inside the oval</p>
+  <p class="cam-hint">Fit the avocado inside the oval, on white paper</p>
   <div class="viewport">
     <video id="video" playsinline muted autoplay></video>
     <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-      <defs><mask id="hole"><rect width="100" height="100" fill="#fff"/><ellipse cx="50" cy="50" rx="30" ry="42" fill="#000"/></mask></defs>
+      <defs><mask id="hole"><rect width="100" height="100" fill="#fff"/><ellipse cx="50" cy="50" rx="19" ry="29" fill="#000"/></mask></defs>
       <rect width="100" height="100" fill="rgba(0,0,0,.45)" mask="url(#hole)"/>
-      <ellipse cx="50" cy="50" rx="30" ry="42" fill="none" stroke="#fff" stroke-width=".7" stroke-dasharray="3 2.2"/>
+      <ellipse cx="50" cy="50" rx="19" ry="29" fill="none" stroke="#fff" stroke-width=".7" stroke-dasharray="3 2.2"/>
     </svg>
   </div>
   <div class="cam-bar">
@@ -164,8 +168,10 @@
 
   <div id="error" class="card note verdict" hidden>
     <p><strong>Couldn't find the avocado.</strong></p>
-    <p>Make sure it fills the oval and sits on a light background, then try again.</p>
+    <p>Make sure the whole avocado is in the picture on a light background, then try again.</p>
   </div>
+
+  <div id="busy" class="card verdict" hidden><p class="muted" style="margin:0">Looking closely at your avocado…</p></div>
 
   <div id="verdict" class="verdict">
     <div class="stage-head">
@@ -177,6 +183,11 @@
     </div>
     <p id="stage-advice"></p>
     <p class="muted small" id="stage-detail"></p>
+    <div class="card note" id="check45" hidden>
+      <p><strong>Ripe or overripe? Check by hand.</strong> These two stages often look the same from outside.</p>
+      <p style="margin:0">Flick off the little stem cap: <strong>green</strong> underneath means good, <strong>brown</strong> means overripe.
+        Press gently: if it feels <strong>mushy</strong> or the skin feels loose, it's past its best.</p>
+    </div>
 
     <h2>Days left</h2>
     <div class="seg" role="radiogroup" aria-label="Where is it stored?">
@@ -190,6 +201,7 @@
 
     <h2>Stage likelihood</h2>
     <div class="card" id="bars"></div>
+    <p class="card note small" id="colour-only" style="margin-top:12px" hidden>The image model couldn't load, so this result uses the simpler colour-only model.</p>
     <p class="card note" id="wb-note" style="margin-top:12px" hidden>Tip: put the avocado on white paper so the scanner can correct for the colour of your lighting.</p>
   </div>
 
