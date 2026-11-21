@@ -31,6 +31,9 @@ let netPromise = null;
 function loadNet() {
   netPromise ??= ready.then(async () => {
     $('first-download').hidden = true;
+    // Transformers.js reports "progress" while reading from the cache too, so check first
+    // which message is true.
+    const cached = await netIsCached();
     const { pipeline } = await import(TRANSFORMERS);
     const files = {};
     const extractor = await pipeline('image-feature-extraction', head.blocks[0].modelId, {
@@ -40,10 +43,14 @@ function loadNet() {
         if (e.status !== 'progress' || !e.total) return;
         files[e.file] = [e.loaded, e.total];
         const [l, t] = Object.values(files).reduce((a, [x, y]) => [a[0] + x, a[1] + y], [0, 0]);
-        if (t > 1e6 && l < t) netStatus(`Downloading the image model (first time only)… ${Math.round(l / 1e6)} of ${Math.round(t / 1e6)} MB`);
+        if (t > 1e6 && l < t) netStatus(cached
+          ? 'Loading the image model from this phone…'
+          : `Downloading the image model (first time only)… ${Math.round(l / 1e6)} of ${Math.round(t / 1e6)} MB`);
       },
     });
     netStatus('');
+    // Ask the browser not to clear the saved model when space is low (granted silently or ignored).
+    navigator.storage?.persist?.().catch(() => {});
     return extractor;
   }).catch(e => {
     console.error('image model failed to load', e);
