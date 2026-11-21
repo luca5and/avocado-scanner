@@ -12,7 +12,7 @@ Everything runs in the browser; photos are never uploaded.
 1. **Find the avocado.** [`docs/features.js`](docs/features.js) separates the light background (white paper)
    from the fruit with an Otsu threshold and crops a square around the fruit, framed like the dataset photos
    (fruit ≈ 51% of the frame). Without a clear light background it falls back to the centre square + oval guide.
-2. **Image network.** A pretrained [DINOv2-small](https://huggingface.co/onnx-community/dinov2-small) (8-bit, ~25 MB,
+2. **Image network.** A pretrained [DINOv2-small](https://huggingface.co/onnx-community/dinov2-small) (8-bit, ~24 MB + ~5 MB runtime, downloaded on the first scan and then cached,
    run in the browser with [Transformers.js](https://github.com/huggingface/transformers.js)) turns the crop into
    768 numbers (CLS token + mean of patch tokens). Before that, the image is colour-corrected so the paper has the
    same tint as the dataset's lightbox.

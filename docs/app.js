@@ -24,27 +24,44 @@ const ready = Promise.all([
 });
 
 // ---------- image network (DINOv2), downloaded once and cached by the browser ----------
-const netStatus = t => { $('net-status').textContent = t; };
-const net = ready.then(async () => {
-  const { pipeline } = await import(TRANSFORMERS);
-  const files = {};
-  const extractor = await pipeline('image-feature-extraction', head.blocks[0].modelId, {
-    dtype: head.blocks[0].dtype,
-    device: 'wasm',
-    progress_callback: e => {
-      if (e.status !== 'progress' || !e.total) return;
-      files[e.file] = [e.loaded, e.total];
-      const [l, t] = Object.values(files).reduce((a, [x, y]) => [a[0] + x, a[1] + y], [0, 0]);
-      if (t > 1e6) netStatus(`Loading the image model… ${Math.round(l / 1e6)} of ${Math.round(t / 1e6)} MB`);
-    },
+// Downloaded only when someone starts a scan (or straight away if it is already cached),
+// so visitors who just look at the page don't spend 25 MB of data.
+const netStatus = t => document.querySelectorAll('.net-status').forEach(el => { el.textContent = t; el.hidden = !t; });
+let netPromise = null;
+function loadNet() {
+  netPromise ??= ready.then(async () => {
+    $('first-download').hidden = true;
+    const { pipeline } = await import(TRANSFORMERS);
+    const files = {};
+    const extractor = await pipeline('image-feature-extraction', head.blocks[0].modelId, {
+      dtype: head.blocks[0].dtype,
+      device: 'wasm',
+      progress_callback: e => {
+        if (e.status !== 'progress' || !e.total) return;
+        files[e.file] = [e.loaded, e.total];
+        const [l, t] = Object.values(files).reduce((a, [x, y]) => [a[0] + x, a[1] + y], [0, 0]);
+        if (t > 1e6 && l < t) netStatus(`Downloading the image model (first time only)… ${Math.round(l / 1e6)} of ${Math.round(t / 1e6)} MB`);
+      },
+    });
+    netStatus('');
+    return extractor;
+  }).catch(e => {
+    console.error('image model failed to load', e);
+    netStatus('Image model unavailable – using the simpler colour model.');
+    return null;
   });
-  netStatus('');
-  return extractor;
-}).catch(e => {
-  console.error('image model failed to load', e);
-  netStatus('Image model unavailable – using the simpler colour model.');
-  return null;
-});
+  return netPromise;
+}
+
+/** Is the model file already in the browser's cache from an earlier visit? */
+async function netIsCached() {
+  try {
+    await ready;
+    const cache = await caches.open('transformers-cache');
+    const keys = await cache.keys();
+    return keys.some(k => k.url.includes(head.blocks[0].modelId) && k.url.endsWith('.onnx'));
+  } catch { return false; }
+}
 
 // ---------- camera ----------
 async function openCamera() {
@@ -138,7 +155,7 @@ async function analyse(source, w, h) {
 
   // 4) image network + combined classifier (falls back to colour-only)
   let r, usedNet = false;
-  const extractor = await net;
+  const extractor = await loadNet();
   if (extractor) {
     try {
       const { RawImage } = await import(TRANSFORMERS);
@@ -227,6 +244,8 @@ function renderOutlook() {
 }
 
 // ---------- wiring ----------
+// start the model download as soon as someone shows they want to scan; it continues while they frame the shot
+for (const id of ['scan', 'upload', 'gallery', 'sample']) $(id).addEventListener('click', loadNet);
 $('scan').addEventListener('click', openCamera);
 $('again').addEventListener('click', openCamera);
 $('shutter').addEventListener('click', capture);
@@ -240,3 +259,5 @@ document.querySelectorAll('input[name=storage]').forEach(r => r.addEventListener
 show('home');
 const qs = new URLSearchParams(location.search), RAW = qs.has('raw');
 if (qs.has('sample')) trySample(+qs.get('sample') || 0);
+// already downloaded on an earlier visit? then get it ready now (no data used); otherwise explain the first download
+netIsCached().then(cached => { if (cached) loadNet(); else if (!netPromise) $('first-download').hidden = false; });
