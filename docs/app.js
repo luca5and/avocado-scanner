@@ -257,6 +257,16 @@ $('scan').addEventListener('click', openCamera);
 $('again').addEventListener('click', openCamera);
 $('shutter').addEventListener('click', capture);
 $('cancel').addEventListener('click', () => { closeCamera(); show('home'); });
+// The site always opens at the top: in-page links (e.g. to "Your privacy") scroll without putting
+// "#privacy" in the address, and an address that already has one (from older versions) is cleaned up.
+history.scrollRestoration = 'manual';
+if (location.hash) { history.replaceState(null, '', location.pathname + location.search); window.scrollTo(0, 0); }
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  e.preventDefault();
+  document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
+});
 // Never leave the camera running in the background: switch it off when the page is hidden.
 document.addEventListener('visibilitychange', () => { if (document.hidden && stream) { closeCamera(); show('home'); } });
 $('upload').addEventListener('click', () => $('file').click());
